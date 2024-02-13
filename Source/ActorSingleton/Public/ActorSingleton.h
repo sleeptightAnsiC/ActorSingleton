@@ -81,41 +81,15 @@ public:
 		meta = (DisplayName = "Get Actor Singleton Instance", DeterminesOutputType = "Class", WorldContext = "WorldContext"))
 	static AActorSingleton* GetInstance(const UWorld* const WorldContext, TSubclassOf<AActorSingleton> Class);
 
-	/* Templated version of AActorSingleton::Get
-	* Will cause a compilation error if you try to call it on class not derived from AActorSingleton. */
+	/* Templated version of AActorSingleton::GetInstance */
 	template<class T>
-	static T* GetInstance(const UWorld* const World)
+	static T* Get(const UObject* WorldContext)
 	{
-		static_assert(TIsDerivedFrom<T, AActorSingleton>::IsDerived, "T must be derived from AActorSingleton");
+		static_assert(TIsDerivedFrom<T, AActorSingleton>::IsDerived);
+		const UWorld* const World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::LogAndReturnNull);
 		return static_cast<T*>(AActorSingleton::GetInstance(World, T::StaticClass()));
 	}
 
-	/* Templated version of AActorSingleton::Get
-	* Will cause a compilation error if you try to call it on class not derived from AActorSingleton. */
-	template<class T>
-	static T* GetInstance(const UObject* WorldContextObject)
-	{
-		const UWorld* const World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
-		return AActorSingleton::GetInstance<T>(World);
-	}
-
-	/* Same as AActorSingleton::Get<T> but causes a crash in case of returning 'nullptr' */
-	template<class T>
-	static T* GetInstanceChecked(const UWorld* const World)
-	{
-		T* Instance = AActorSingleton::GetInstance<T>(World);
-		check(Instance)
-		return Instance;
-	}
-
-	/* Same as AActorSingleton::Get<T> but causes a crash in case of returning 'nullptr' */
-	template<class T>
-	static T* GetInstanceChecked(const UObject* WorldContextObject)
-	{
-		T* Instance = AActorSingleton::GetInstance<T>(WorldContextObject);
-		check(Instance)
-		return Instance;
-	}
 
 public:
 
@@ -144,10 +118,6 @@ private:
 	/* Wrapper for UWorld::GetSubsystem<UActorSingletonManager>
 	* May return 'nullptr' in case of Manager not being initialized yet. */
 	static UActorSingletonManager* Get(const UWorld* const World);
-
-	/* Wrapper for UWorld::GetSubsystem<UActorSingletonManager>
-	* This version causes a crash in case of returning 'nullptr'. */
-	static UActorSingletonManager* GetChecked(const UWorld* const World);
 
 	UPROPERTY()
 	TMap<TSubclassOf<AActorSingleton>, AActorSingleton*> Instances;
