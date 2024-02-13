@@ -72,3 +72,13 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+
+
+.vscode
+.code-workspace
+.ignore
+.cache
+*.code-workspace
+compile_commands.json
+Makefile
