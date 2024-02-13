@@ -206,7 +206,7 @@ void AActorSingleton::TryBecomeNewInstanceOrSelfDestroy()
 	/* I don't really remember why I placed 'ensure' here but for sure I had a good reason.
 	* Now when I read this code it makes more sense to just crash in this place
 	* 	since you're most likely doing something wrong by passing invalid WorldContext.
-	* TODO: Add proper note or replace 'ensure' with 'check', whenever this case reoccures. */
+	* FIXME: Add proper note or replace 'ensure' with 'check' */
 	if (!ensure(IsValid(WorldContext)))
 	{
 		return nullptr;
@@ -244,14 +244,6 @@ void AActorSingleton::TryBecomeNewInstanceOrSelfDestroy()
 {
 	check(IsValid(World))
 	return World->GetSubsystem<UActorSingletonManager>();
-}
-
-
-/* static */ UActorSingletonManager* UActorSingletonManager::GetChecked(const UWorld* const World)
-{
-	UActorSingletonManager* Instance = UActorSingletonManager::Get(World);
-	check(Instance)
-	return Instance;
 }
 
 
