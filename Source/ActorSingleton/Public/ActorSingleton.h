@@ -19,9 +19,6 @@ DECLARE_LOG_CATEGORY_EXTERN(ActorSingleton, Log, All);
 =
 =	Pretty much the whole magic happens in the AActorSingleton::TryBecomeNewInstanceOrSelfDestroy
 =
-=	Make sure to override AActorSingleton::IsFinalSingletonClass,
-=		to make it return 'true' for the final class!
-=
 ================================================================================*/
 
 
@@ -58,7 +55,7 @@ public:
 	*		as BlueprintNativeEvent does NOT support static functions */
 	UFUNCTION(BlueprintNativeEvent)
 	bool IsFinalSingletonClass() const;
-	virtual bool IsFinalSingletonClass_Implementation() const { return false; }
+	virtual bool IsFinalSingletonClass_Implementation() const;
 
 	/* Override to provide a custom HEADER for the message which appears in the Editor
 	*	when you place a duplicate of Actor Singleton into Level Viewport

@@ -185,6 +185,12 @@ void AActorSingleton::TryBecomeNewInstanceOrSelfDestroy()
 }
 
 
+/* virtual */ bool AActorSingleton::IsFinalSingletonClass_Implementation() const
+{
+	return GetClass() != AActorSingleton::StaticClass();
+}
+
+
 /* virtual */ FText AActorSingleton::GetMessageTitle_Implementation() const
 {
 	 return FText::FromString("ActorSingleton - Destroyed Duplicate");
