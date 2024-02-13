@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "ActorSingleton",
+	"Description": "",
+	"Category": "Other",
+	"CreatedBy": "sleeptightAnsiC",
+	"CreatedByURL": "https://github.com/sleeptightAnsiC",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": false,
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "ActorSingleton",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
