@@ -3,8 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Modules/ModuleManager.h"
-#include "GameFramework/Actor.h"
 #include "ActorSingleton.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(ActorSingleton, Log, All);
@@ -47,26 +45,30 @@ public:
 	* Does nothing in few circumstances, e.g. when calling on CDO */
 	void TryBecomeNewInstanceOrSelfDestroy();
 
-	/* Tells whenever the instances of sub-class will be considered the same as instances of base class
-	* e.g. B is a subclass of A, A::IsFinalSingletonClass returns 'true',
-	*		so if there is already an instance of A, new instance of B will be destroyed (and vice-versa)
-	* This function is only called on CDO, it basically works like a 'static' function,
-	*		but since we have to support Blueprints, we cannot simply make it static,
-	*		as BlueprintNativeEvent does NOT support static functions */
+	/* If set to 'true', all sub-classess will be considered as duplicates.
+	* By default, this function returns true for any non-Abstract class,
+	* 	but you can override it, if you wish to have base class that is abstract.
+	* This function only runs on CDO, so any conditional logic won't make any sense.
+	* It's basically static function. */
 	UFUNCTION(BlueprintNativeEvent)
-	bool IsFinalSingletonClass() const;
-	virtual bool IsFinalSingletonClass_Implementation() const;
+	bool IsFinalParent() const;
+	virtual bool IsFinalParent_Implementation() const
+	{
+		const UClass* const ThisClass = GetClass();
+		const bool bAbstract = ThisClass->HasAnyClassFlags(EClassFlags::CLASS_Abstract);
+		return !bAbstract;
+	};
 
 	/* Override to provide a custom HEADER for the message which appears in the Editor
 	*	when you place a duplicate of Actor Singleton into Level Viewport
-	* Unlike IsFinalSingletonClass, this function runs on object instance, not on CDO. */
+	* Unlike IsFinalParent, this function runs on object instance, not on CDO. */
 	UFUNCTION(BlueprintNativeEvent)
 	FText GetMessageTitle() const;
 	virtual FText GetMessageTitle_Implementation() const;
 
 	/* Override to provide a custom BODY for the message which appears in the Editor
 	*	when you place a duplicate of Actor Singleton into Level Viewport
-	* Unlike IsFinalSingletonClass, this function runs on object instance, not on CDO. */
+	* Unlike IsFinalParent, this function runs on object instance, not on CDO. */
 	UFUNCTION(BlueprintNativeEvent)
 	FText GetMessageBody() const;
 	virtual FText GetMessageBody_Implementation() const;
@@ -76,23 +78,31 @@ public:
 	* This is a BP version of this function. For better typesafety in C++, use AActorSingleton::Get<T> */
 	UFUNCTION(BlueprintCallable, BlueprintPure,
 		meta = (DisplayName = "Get Actor Singleton Instance", DeterminesOutputType = "Class", WorldContext = "WorldContext"))
-	static AActorSingleton* GetInstance(const UWorld* const WorldContext, TSubclassOf<AActorSingleton> Class);
+	static AActorSingleton* GetInstance(const UObject* const WorldContext, TSubclassOf<AActorSingleton> Class);
 
 	/* Templated version of AActorSingleton::GetInstance */
 	template<class T>
 	static T* Get(const UObject* WorldContext)
 	{
 		static_assert(TIsDerivedFrom<T, AActorSingleton>::IsDerived);
-		const UWorld* const World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::LogAndReturnNull);
-		return static_cast<T*>(AActorSingleton::GetInstance(World, T::StaticClass()));
+		check(IsValid(WorldContext))
+		checkCode(
+			UObject* CDO = T::StaticClass()->GetDefaultObject();
+			TSubclassOf<AActorSingleton> FinalParent = static_cast<AActorSingleton*>(CDO)->GetFinalParent();
+			check(FinalParent)
+		)
+		return static_cast<T*>(AActorSingleton::GetInstance(WorldContext, T::StaticClass()));
 	}
-
 
 public:
 
 	//~ Begin AActor Interface
 	virtual void OnConstruction(const FTransform& Transform) override;
 	//~ End AActor Interface
+
+private:
+
+	TSubclassOf<AActorSingleton> GetFinalParent();
 };
 
 
@@ -114,7 +124,7 @@ private:
 
 	/* Wrapper for UWorld::GetSubsystem<UActorSingletonManager>
 	* May return 'nullptr' in case of Manager not being initialized yet. */
-	static UActorSingletonManager* Get(const UWorld* const World);
+	static UActorSingletonManager* Get(const UObject* const WorldContext);
 
 	UPROPERTY()
 	TMap<TSubclassOf<AActorSingleton>, AActorSingleton*> Instances;

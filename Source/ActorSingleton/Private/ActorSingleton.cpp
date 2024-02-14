@@ -30,15 +30,14 @@ void AActorSingleton::TryBecomeNewInstanceOrSelfDestroy()
 		return;
 	}
 
-	TSubclassOf<AActorSingleton> ThisClass = this->GetClass();
-
 	/* Do nothing, if 'this' is CDO */
-	if (this == ThisClass->GetDefaultObject())
+	if (this == GetClass()->GetDefaultObject())
 	{
 		return;
 	}
 
 	UWorld* ThisWorld = GetWorld();
+
 	auto* ActorSingletonManager = UActorSingletonManager::Get(ThisWorld);
 
 	/* UActorSingletonManager::Get can fail (and this is expected)
@@ -51,61 +50,24 @@ void AActorSingleton::TryBecomeNewInstanceOrSelfDestroy()
 		return;
 	}
 
+	TSubclassOf<AActorSingleton> ParentClass = GetFinalParent();
+
+	if(!ensure(ParentClass))
+	{
+		return;
+	}
+
 	TMap<TSubclassOf<AActorSingleton>, AActorSingleton*>& InstancesMap = ActorSingletonManager->Instances;
-
-	TArray<UClass*>	ClassInheritanceChain;
-
-	/* Go through the UClass::GetSuperClass chain, from 'ThisClass' to 'AActorSingleton',
-	* and store said chain as we gonna traverse it backwards later. */
-	for (UClass* ItClass = ThisClass; ItClass != AActorSingleton::StaticClass(); ItClass = ItClass->GetSuperClass())
+	if (!InstancesMap.Contains(ParentClass))
 	{
-		ClassInheritanceChain.Add(ItClass);
+		InstancesMap.Add(ParentClass, nullptr);
 	}
-	ClassInheritanceChain.Add(AActorSingleton::StaticClass());
-
-	/* Traverse throught ClassInheritanceChain from the back (top parrent) to the front (ThisClass)
-	* We do this to find the highest parrent class that returns 'true' from AActorSingleton::IsFinalSingletonClass,
-	*	in such case we stop traversing and start treating said class as new 'ThisClass'. */
-	int32 ItClassIndex = ClassInheritanceChain.Num() - 1;
-	for (; ItClassIndex > 0; --ItClassIndex)
-	{
-		const auto* ItCDO = static_cast<AActorSingleton*>(ClassInheritanceChain[ItClassIndex]->GetDefaultObject());
-		if (ItCDO->IsFinalSingletonClass())
-		{
-			break;
-		}
-	}
-	ThisClass = ClassInheritanceChain[ItClassIndex];
-
-	if (!InstancesMap.Contains(ThisClass))
-	{
-		InstancesMap.Add(ThisClass, nullptr);
-	}
-	AActorSingleton*& CurrentInstance = InstancesMap[ThisClass];
+	AActorSingleton*& CurrentInstance = InstancesMap[ParentClass];
 
 	if (this == CurrentInstance)
 	{
 		return;
 	}
-
-	ensureAlwaysMsgf
-	(
-		/* InExpression */
-		[=](){
-			const auto* ThisCDO = static_cast<AActorSingleton*>(ThisClass->GetDefaultObject());
-			return ThisCDO->IsFinalSingletonClass();
-		}(),
-		/* InFormat */
-		TEXT(
-			"There is no class in the Inheritance Chain going from '%s' to '%s',"
-			" which would return 'true' from 'IsFinalSingletonClass'."
-			" Please make sure to override 'AActorSingleton::IsFinalSingletonClass'."
-			" Said function must return 'true' on the final base class!"
-		),
-		/* VARGS */
-		*ThisClass->GetFName().ToString(),
-		*AActorSingleton::StaticClass()->GetFName().ToString()
-	);
 
 	/* You are allowed to destroy singleton instance on your own,
 	*	so we expect that reference to the instance may not be valid anymore.
@@ -117,7 +79,7 @@ void AActorSingleton::TryBecomeNewInstanceOrSelfDestroy()
 		UE_LOGFMT(ActorSingleton, Warning,
 			"'{ActorName}' is now a Singleton instance of class '{ClassName}' in the World '{WorldName}'! "
 			"Adding/Spawning more instances of the same class in the same World will resul in them being destroyed!",
-			AActor::GetDebugName(this), ThisClass->GetFName(), ThisWorld->GetFName());
+			AActor::GetDebugName(this), ParentClass->GetFName(), ThisWorld->GetFName());
 
 		return;
 	}
@@ -126,7 +88,7 @@ void AActorSingleton::TryBecomeNewInstanceOrSelfDestroy()
 	* We consider such case as an error, because when it happens, you're doing something wrong. */
 	UE_LOGFMT(ActorSingleton, Error,
 		"World '{WorldName}' can have only one instance of '{ClassName}'! Destroying '{ActorName}' ...",
-		ThisWorld->GetFName(), ThisClass->GetFName(), AActor::GetDebugName(this));
+		ThisWorld->GetFName(), ParentClass->GetFName(), AActor::GetDebugName(this));
 
 #if WITH_EDITOR
 	/* In case of placing an Actor in the Level Viewport, we canNOT simply Destroy it.
@@ -185,12 +147,6 @@ void AActorSingleton::TryBecomeNewInstanceOrSelfDestroy()
 }
 
 
-/* virtual */ bool AActorSingleton::IsFinalSingletonClass_Implementation() const
-{
-	return GetClass() != AActorSingleton::StaticClass();
-}
-
-
 /* virtual */ FText AActorSingleton::GetMessageTitle_Implementation() const
 {
 	 return FText::FromString("ActorSingleton - Destroyed Duplicate");
@@ -207,7 +163,7 @@ void AActorSingleton::TryBecomeNewInstanceOrSelfDestroy()
 }
 
 
-/* static */ AActorSingleton* AActorSingleton::GetInstance(const UWorld* const  WorldContext, TSubclassOf<AActorSingleton> Class)
+/* static */ AActorSingleton* AActorSingleton::GetInstance(const UObject* const  WorldContext, TSubclassOf<AActorSingleton> Class)
 {
 	/* I don't really remember why I placed 'ensure' here but for sure I had a good reason.
 	* Now when I read this code it makes more sense to just crash in this place
@@ -224,18 +180,23 @@ void AActorSingleton::TryBecomeNewInstanceOrSelfDestroy()
 	*		and I don't really understand why this is possible in the first place.
 	* It has happened to me when compiling a Blueprint of an Actor that was placed in the Level Viewport
 	*		or when opening Content Browser with the same Blueprint. */
-	if (!ActorSingletonManager)
+	if (!ensure(IsValid(ActorSingletonManager)))
 	{
 		return nullptr;
 	}
 
 	auto& InstancesMap = ActorSingletonManager->Instances;
-	if (!InstancesMap.Contains(Class))
+	AActorSingleton* CDO = static_cast<AActorSingleton*>(Class->GetDefaultObject());
+	TSubclassOf<AActorSingleton> ParentClass = CDO->GetFinalParent();
+	if (
+		ensure(ParentClass)
+		&& InstancesMap.Contains(ParentClass)
+		)
 	{
-		return nullptr;
+		return InstancesMap[ParentClass];
 	}
 
-	return InstancesMap[Class];
+	return nullptr;
 }
 
 
@@ -246,9 +207,39 @@ void AActorSingleton::TryBecomeNewInstanceOrSelfDestroy()
 }
 
 
-/* static */ UActorSingletonManager* UActorSingletonManager::Get(const UWorld* const World)
+TSubclassOf<AActorSingleton> AActorSingleton::GetFinalParent()
 {
-	check(IsValid(World))
+	TArray<TSubclassOf<AActorSingleton>> InheritanceChain;
+	/* Go through the UClass::GetSuperClass chain, from current class to 'AActorSingleton',
+	* and store said chain as we gonna traverse it backwards later. */
+	for (TSubclassOf<AActorSingleton> ItClass = GetClass(); ItClass != AActorSingleton::StaticClass(); ItClass = ItClass->GetSuperClass())
+	{
+		InheritanceChain.Add(ItClass);
+	}
+	// InheritanceChain.Add(AActorSingleton::StaticClass());
+
+	/* Traverse throught ClassInheritanceChain from the back (top parrent) to the front (ThisClass)
+	* We do this to find the highest parrent class that isn't Abstract,
+	*	in such case we stop traversing and start treating said class as new 'ThisClass'. */
+	for (int32 i = InheritanceChain.Num() - 1; i >= 0; --i)
+	{
+		UObject* ItCDO = InheritanceChain[i]->GetDefaultObject();
+		const bool bItFinalParent = static_cast<AActorSingleton*>(ItCDO)->IsFinalParent();
+		if (bItFinalParent)
+		{
+			return InheritanceChain[i];
+		}
+	}
+
+	/* No nonAbstract Class found */
+	return nullptr;
+}
+
+
+/* static */ UActorSingletonManager* UActorSingletonManager::Get(const UObject* const WorldContext)
+{
+	check(IsValid(WorldContext))
+	const UWorld* const World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::Assert);
 	return World->GetSubsystem<UActorSingletonManager>();
 }
 
