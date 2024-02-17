@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Published under MIT License, created by https://github.com/sleeptightAnsiC
 
 using UnrealBuildTool;
 
@@ -7,7 +7,7 @@ public class ActorSingleton : ModuleRules
 	public ActorSingleton(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
+
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{

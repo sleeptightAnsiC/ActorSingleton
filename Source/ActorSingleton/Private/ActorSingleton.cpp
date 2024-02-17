@@ -216,7 +216,6 @@ TSubclassOf<AActorSingleton> AActorSingleton::GetFinalParent()
 	{
 		InheritanceChain.Add(ItClass);
 	}
-	// InheritanceChain.Add(AActorSingleton::StaticClass());
 
 	/* Traverse throught ClassInheritanceChain from the back (top parrent) to the front (ThisClass)
 	* We do this to find the highest parrent class that isn't Abstract,
@@ -231,7 +230,6 @@ TSubclassOf<AActorSingleton> AActorSingleton::GetFinalParent()
 		}
 	}
 
-	/* No nonAbstract Class found */
 	return nullptr;
 }
 
