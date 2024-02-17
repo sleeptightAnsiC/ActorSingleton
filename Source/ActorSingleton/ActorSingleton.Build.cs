@@ -8,24 +8,20 @@ public class ActorSingleton : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-                "Core",
-				"CoreUObject",
-				"Engine",
-            }
-		);
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"Core",
+			"CoreUObject",
+			"Engine",
+		});
 
-        // we only want this to be included for editor builds but not packaged builds
-        if (Target.bBuildEditor)
-        {
-            PublicDependencyModuleNames.AddRange(
-                new string[]
-                {
-                    "UnrealEd",
-                }
-            );
-        }
-    }
+		// we only want this to be included for editor builds but not packaged builds
+		if (Target.bBuildEditor)
+		{
+			PublicDependencyModuleNames.AddRange(new string[]
+			{
+				"UnrealEd",
+			});
+		}
+	}
 }
