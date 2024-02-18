@@ -40,11 +40,6 @@ class ACTORSINGLETON_API AActorSingleton : public AActor
 
 public:
 
-	/* Try to become a new single instance within current UWorld,
-	* if instance already exists, call this->Destroy
-	* Does nothing in few circumstances, e.g. when calling on CDO */
-	void TryBecomeNewInstanceOrSelfDestroy();
-
 	/* If set to 'true', all sub-classess will be considered as duplicates.
 	* By default, this function returns true for any non-Abstract class,
 	* 	but you can override it, if you wish to have base class that is abstract.
@@ -82,7 +77,7 @@ public:
 
 	/* Templated version of AActorSingleton::GetInstance */
 	template<class T>
-	static T* Get(const UObject* WorldContext)
+	static T* GetInstance(const UObject* WorldContext)
 	{
 		static_assert(TIsDerivedFrom<T, AActorSingleton>::IsDerived);
 		check(IsValid(WorldContext))
@@ -94,13 +89,16 @@ public:
 		return static_cast<T*>(AActorSingleton::GetInstance(WorldContext, T::StaticClass()));
 	}
 
-public:
-
 	//~ Begin AActor Interface
 	virtual void OnConstruction(const FTransform& Transform) override;
 	//~ End AActor Interface
 
 private:
+
+	/* Try to become a new single instance within current UWorld,
+		* if instance already exists, call this->Destroy
+		* Does nothing in few circumstances, e.g. when calling on CDO */
+	void TryBecomeNewInstanceOrSelfDestroy();
 
 	TSubclassOf<AActorSingleton> GetFinalParent();
 };
@@ -116,6 +114,12 @@ class ACTORSINGLETON_API UActorSingletonManager : public UWorldSubsystem
 
 	friend AActorSingleton;
 
+public:
+
+	//~ Begin UWorldSubsystem Interface
+	virtual void PostInitialize() override;
+	//~ End UWorldSubsystem Interface
+
 private:
 
 	/* Gets all AActorSingleton in the current UWorld,
@@ -128,10 +132,5 @@ private:
 
 	UPROPERTY()
 	TMap<TSubclassOf<AActorSingleton>, AActorSingleton*> Instances;
-
-public:
-
-	//~ Begin UWorldSubsystem Interface
-	virtual void PostInitialize() override;
-	//~ End UWorldSubsystem Interface
 };
+
