@@ -4,6 +4,7 @@ Tiny plugin that adds [AActorSingleton](https://github.com/sleeptightAnsiC/Actor
 
 Install like every other plugin, by cloning into project's `Plugins` directory.
 
+For context see the information below or read the source code.
 
 ## About
 
@@ -13,15 +14,16 @@ Imagine the following case: you need an [UObject](https://docs.unrealengine.com/
 
 So what options do we have? Unreal Engine has [few ways of creating singletons](https://benui.ca/unreal/subsystem-singleton/), the best out of them is creating a class derived from [USubsytem](https://docs.unrealengine.com/5.3/en-US/API/Runtime/Engine/Subsystems/USubsystem/). The one that suits most of our needs is [UWorldSubsystem](https://docs.unrealengine.com/5.3/en-US/API/Runtime/Engine/Subsystems/UWorldSubsystem/), but instance of said class won't appear in the Level Viewport so it doesn't fully fit in out case.
 
-The other option would be creating an [AActor](https://docs.unrealengine.com/5.3/en-US/API/Runtime/Engine/GameFramework/AActor/). Actors are accessible from Level Viewport since they "live" within UWorld. However, how do we ensure that there is only one spawned instance of said Actor?...
+The other option would be creating an [AActor](https://docs.unrealengine.com/5.3/en-US/API/Runtime/Engine/GameFramework/AActor/). Actors are easily accessible from Level Viewport. However, how do we ensure that there is only one spawned instance of said Actor?...
 
-...and this is why this plugin exists. It introduces [AActorSingleton](https://github.com/sleeptightAnsiC/ActorSingleton/blob/main/Source/ActorSingleton/Public/ActorSingleton.h#L35) class that you can derive from. If you try to spawn multiple instances of said class, it will allow to spawn only one and will automaticly destroy the rest.
+...and this is why this plugin exists. It introduces [AActorSingleton](https://github.com/sleeptightAnsiC/ActorSingleton/blob/main/Source/ActorSingleton/Public/ActorSingleton.h#L35) class that you can derive from. If you try to spawn multiple instances of said class, it will only allow to spawn the first one and then will automaticly destroy the rest.
 
-Whenever you may try to spawn a duplicate instace, you will get a meaningfull error about it. If you try to do this by placing Actor to the Level Viewport you will even get a clear popup message:
+## Usage
+
+Derive from [AActorSingleton](https://github.com/sleeptightAnsiC/ActorSingleton/blob/main/Source/ActorSingleton/Public/ActorSingleton.h#L35) and make sure that [ActorSingleton::IsFinalParent](https://github.com/sleeptightAnsiC/ActorSingleton/blob/main/Source/ActorSingleton/Public/ActorSingleton.h#L49) returns `true` for your class.
+
+Whenever you try to spawn a duplicate instace, you will get a meaningfull error about it. If you try to do this by placing an Actor to the Level Viewport you will even get a clear popup message:
 
 ![image](https://github.com/sleeptightAnsiC/ActorSingleton/assets/91839286/ef8cd4f1-9a0d-47e3-9522-77eb1351e80e)
 
-https://github.com/sleeptightAnsiC/ActorSingleton/assets/91839286/2c4b77bf-e4ce-4154-a73b-9b8da5832507
-
-
-
+### Tested on Linux with UE 5.3.2 and clang
