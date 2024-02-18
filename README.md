@@ -1,4 +1,4 @@
-# AActorSingleton
+# ActorSingleton
 
 Tiny plugin that adds [AActorSingleton](https://github.com/sleeptightAnsiC/ActorSingleton/blob/main/Source/ActorSingleton/Public/ActorSingleton.h#L35) class.
 
