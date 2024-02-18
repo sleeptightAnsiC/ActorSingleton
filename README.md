@@ -1,6 +1,6 @@
 # ActorSingleton
 
-Tiny plugin that adds [AActorSingleton](https://github.com/sleeptightAnsiC/ActorSingleton/blob/main/Source/ActorSingleton/Public/ActorSingleton.h#L35) class.
+Tiny UE5 plugin that adds [AActorSingleton](https://github.com/sleeptightAnsiC/ActorSingleton/blob/main/Source/ActorSingleton/Public/ActorSingleton.h#L35) class.
 
 Install like every other plugin, by cloning into project's `Plugins` directory.
 
